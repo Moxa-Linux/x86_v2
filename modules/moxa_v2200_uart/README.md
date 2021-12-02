@@ -1,0 +1,87 @@
+The Moxa UART interface driver is for moxa V2201 embedded computer. It creates the /dev/uart the entry point for setting the UART RS-232/422/485 interface. 
+You can use the setuartmode to set the working mode.
+This is the architecture of the moxa_uart_mode driver.
+
+
+user sapce	setuartmode
+
+		/dev/uart
+		-----------------------------------------------------------------
+kernel space	| moxa_v2100_wdt.ko  |  moxa_device_dio.ko |  moxa-device-uart.ko  |
+		-----------------------------------------------------------------
+		| moxa_v2100_superio.ko                                          | 
+		-----------------------------------------------------------------
+
+
+## Setting the path to your kernel source tree in Makefile.
+
+	To compile this driver, you should modify the KDIR to the path of your kernel source. 
+	Modify the KERNEL_VERSION to your target's kernel version.
+	We configure the KDIR and KERNEL_VERSION in Makefile for configuring the path of the kernel source.
+
+	The original value
+
+	KERNEL_VERSION=`cat $(ROOTDIR)/$(LINUXDIR)/include/config/kernel.release`
+	KDIR:=$(ROOTDIR)/$(LINUXDIR)
+
+	The new value
+
+	KERNEL_VERSION=`uname -r`
+	KDIR=/lib/modules/$(KERNEL_VERSION)/build
+
+## Compile the moxa_v2100_superio kernel module before making this module.
+
+	First, you should reference moxa_v2100_wdt/README to build the moxa_v2100_superio.ko.
+
+	$ cd /home/moxa/moxa_v2100_superio
+	$ make
+	  Building modules, stage 2.
+	  MODPOST 2 modules
+	  CC      /home/moxa/moxa_v2100_wdt/moxa_v2100_superio.mod.o
+	  LD [M]  /home/moxa/moxa_v2100_wdt/moxa_v2100_superio.ko
+
+## Compile the driver after your kernel source has compiled.
+
+	Then build the device driver
+
+	$ cd /home/moxa/moxa_v2200_uart
+	$ make
+	  Building modules, stage 2.
+	  MODPOST 2 modules
+	  CC      /home/moxa/moxa_v2200_uart/moxa-device-uart.o
+	  LD [M]  /home/moxa/moxa_v2200_uart/moxa-device-uart.ko
+
+## Load this driver manually
+
+	You can copy it to target and load it.
+
+	$ insmod /PATH/TO/moxa-device-uart.ko
+
+## Install the moxa_v2100_superio drivers and load it at boot time.
+
+	Build and install the superio driver
+	$ cd /home/moxa/moxa_v2100_superio
+	$ make install
+
+	Install the moxa_uart_mode.ko driver
+	$ cd /home/moxa/moxa_v2200_uart
+	$ make install
+
+## Use the setuartmode utility to set/get the UART mode
+
+	To set the first serial port as RS-232 mode
+
+	root@Moxa:~# setinterface /dev/ttyS0 0
+
+	To set the first serial port as RS-485-2W mode
+
+	root@Moxa:~# setinterface /dev/ttyS0 1
+
+	To set the first serial port as RS-422 mode
+
+	root@Moxa:~# setinterface /dev/ttyS0 2
+
+	To set the first serial port as RS-485-4W mode
+
+	root@Moxa:~# setinterface /dev/ttyS0 3
+
